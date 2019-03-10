@@ -41,7 +41,7 @@ defmodule LogStats do
     bootstrap()
 
     tasks =
-      Enum.map(1..16, fn num ->
+      Enum.map(1..15, fn num ->
         {:ok, task} =
           Task.start(fn ->
             IO.inspect("---- TASK #{num}: start processing data...")
