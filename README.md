@@ -23,6 +23,7 @@ Feel free to use for your own usecase.
 
 Result format is as follows
 
+```
 %{
   "order/update" => 1011450,
   "payment/fetch" => 1810,
@@ -72,3 +73,4 @@ Result format is as follows
   :ccb_resp_to_console_after_100ms => 57093
 }
 948
+```
