@@ -111,10 +111,9 @@ defmodule LogStats do
 
   defp endpoint_stats(x) do
     Enum.each(@endpoints, fn endpoint ->
-      line = "POST /api/v1/#{endpoint}"
       case x do
-        <<_ :: binary-size(74), rest :: binary>> -> 
-          case rest == line do
+        <<_ :: binary-size(87), rest :: binary>> -> 
+          case rest == endpoint <> "\n" do
             true -> add_stats(endpoint)
             _ -> :ok
           end
@@ -124,24 +123,19 @@ defmodule LogStats do
   end
 
   defp sent_stats(x) do
-    if String.contains?(x, "[info] Sent ") do
-      [code, time] =
-        x
-        |> String.split("[info] Sent ")
-        |> List.last()
-        |> String.split(" in ")
-
-      tuple = time |> String.replace("\n", "") |> Integer.parse()
-
-      time_stats(tuple)
-
-      case code do
-        "200" ->
-          add_stats(:ccb_resp_to_console_200)
-          
-        _ ->
-          add_stats(:ccb_resp_to_console_not_200)
-      end
+    case x do
+      <<_ :: binary-size(74), sent :: binary-size(4), _ :: size(8), code :: binary-size(3), _ :: binary-size(4), rest :: binary>> -> 
+        case sent do
+          "Sent" ->
+            case code do
+              "200" -> add_stats(:ccb_resp_to_console_200)
+              _ -> add_stats(:ccb_resp_to_console_not_200)
+            end
+            tuple = rest |> String.replace("\n", "") |> Integer.parse()
+            time_stats(tuple)
+            _ -> :ok
+        end
+      _ -> :ok
     end
   end
 
