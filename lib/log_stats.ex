@@ -111,8 +111,14 @@ defmodule LogStats do
 
   defp endpoint_stats(x) do
     Enum.each(@endpoints, fn endpoint ->
-      if String.contains?(x, "POST /api/v1/#{endpoint}") do
-        add_stats(endpoint)
+      line = "POST /api/v1/#{endpoint}"
+      case x do
+        <<_ :: binary-size(74), rest :: binary>> -> 
+          case rest == line do
+            true -> add_stats(endpoint)
+            _ -> :ok
+          end
+          _ -> :ok  
       end
     end)
   end
