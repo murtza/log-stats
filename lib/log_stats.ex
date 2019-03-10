@@ -24,16 +24,48 @@ defmodule LogStats do
     "charges/refund"
   ]
 
+  @stats [
+    :ccb_resp_to_console_200,
+    :ccb_resp_to_console_not_200,
+    :ccb_resp_to_console_after_60s,
+    :ccb_resp_to_console_after_50s,
+    :ccb_resp_to_console_after_40s,
+    :ccb_resp_to_console_after_30s,
+    :ccb_resp_to_console_after_20s,
+    :ccb_resp_to_console_after_15s,
+    :ccb_resp_to_console_after_10s,
+    :ccb_resp_to_console_after_9s,
+    :ccb_resp_to_console_after_8s,
+    :ccb_resp_to_console_after_7s,
+    :ccb_resp_to_console_after_6s,
+    :ccb_resp_to_console_after_5s,
+    :ccb_resp_to_console_after_4s,
+    :ccb_resp_to_console_after_3s,
+    :ccb_resp_to_console_after_2s,
+    :ccb_resp_to_console_after_1s,
+    :ccb_resp_to_console_after_500ms,
+    :ccb_resp_to_console_after_250ms,
+    :ccb_resp_to_console_after_100ms,
+    :ccb_resp_to_console_after_50ms,
+    :ccb_resp_to_console_after_25ms,
+    :ccb_resp_to_console_blazing_fast
+  ]
+
   defp bootstrap() do
     :ets.new(:stats, [:set, :named_table, :public])
     # :ets.new(:request_ids, [:set, :named_table, :public])
+    add_row_in_stats([@endpoints, @stats])
+  end
 
-    Enum.each(@endpoints, fn endpoint ->
-      case :ets.lookup(:stats, endpoint) do
-        [] -> :ets.insert(:stats, {endpoint, 0})
+  defp add_row_in_stats([]), do: :ok
+  defp add_row_in_stats([head | tail]) do
+    Enum.each(head, fn key ->
+      case :ets.lookup(:stats, key) do
+        [] -> :ets.insert(:stats, {key, 0})
         _ -> :ok
       end
     end)
+    add_row_in_stats(tail)
   end
 
   def start(path \\ "/Volumes/SSD2/tauspace/ccb_gateway/logs/logs_for_syed") do
@@ -80,13 +112,7 @@ defmodule LogStats do
   defp endpoint_stats(x) do
     Enum.each(@endpoints, fn endpoint ->
       if String.contains?(x, "POST /api/v1/#{endpoint}") do
-        case :ets.lookup(:stats, endpoint) do
-          [] ->
-            :ets.insert(:stats, {endpoint, 1})
-
-          [{_endpoint, count}] ->
-            :ets.insert(:stats, {endpoint, count + 1})
-        end
+        add_stats(endpoint)
       end
     end)
   end
@@ -105,22 +131,10 @@ defmodule LogStats do
 
       case code do
         "200" ->
-          case :ets.lookup(:stats, :sent_200) do
-            [] ->
-              :ets.insert(:stats, {:ccb_resp_to_console_200, 1})
-
-            [{_endpoint, count}] ->
-              :ets.insert(:stats, {:ccb_resp_to_console_200, count + 1})
-          end
-
+          add_stats(:ccb_resp_to_console_200)
+          
         _ ->
-          case :ets.lookup(:stats, :ccb_resp_to_console_not_200) do
-            [] ->
-              :ets.insert(:stats, {:ccb_resp_to_console_not_200, 1})
-
-            [{_endpoint, count}] ->
-              :ets.insert(:stats, {:ccb_resp_to_console_not_200, count + 1})
-          end
+          add_stats(:ccb_resp_to_console_not_200)
       end
     end
   end
@@ -196,13 +210,7 @@ defmodule LogStats do
   end
 
   defp add_stats(key) do
-    case :ets.lookup(:stats, key) do
-      [] ->
-        :ets.insert(:stats, {key, 1})
-
-      [{_key, count}] ->
-        :ets.insert(:stats, {key, count + 1})
-    end
+    :ets.update_counter(:stats, key, 1)
   end
 
   defp print_count() do
@@ -213,20 +221,20 @@ defmodule LogStats do
     # IO.inspect "Request counts #{length(list)}"
   end
 
-  defp fetch_request_ids(x) do
-    request_id =
-      x
-      |> String.split(" ] [info]")
-      |> hd()
-      |> String.split("[request_id=")
-      |> List.last()
+  # defp fetch_request_ids(x) do
+  #   request_id =
+  #     x
+  #     |> String.split(" ] [info]")
+  #     |> hd()
+  #     |> String.split("[request_id=")
+  #     |> List.last()
 
-    case :ets.lookup(:request_ids, request_id) do
-      [] ->
-        :ets.insert(:request_ids, {request_id, 1})
+  #   case :ets.lookup(:request_ids, request_id) do
+  #     [] ->
+  #       :ets.insert(:request_ids, {request_id, 1})
 
-      [{request_id, count}] ->
-        :ets.insert(:request_ids, {request_id, count + 1})
-    end
-  end
+  #     [{request_id, count}] ->
+  #       :ets.insert(:request_ids, {request_id, count + 1})
+  #   end
+  # end
 end
